@@ -105,6 +105,8 @@ public:
      */
     bool isSessionValid(void);
 
+    bool isThisSession(sc_int<32> p_BGPIdentifier);
+
     void sessionStop(void);
 
     void sessionStart(void);
@@ -185,7 +187,7 @@ private:
      */
     BGPMessage m_KeepaliveMsg;
 
-
+    sc_int<32> m_BGPIdentifierPeer;
 
     /*! \brief Resets the Keepalive timer
      * \details 

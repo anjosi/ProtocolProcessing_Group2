@@ -29,10 +29,31 @@ using namespace sc_dt;
 int sc_main(int argc, char * argv [])
 {
 
+
+
+
+    /*!
+     * \property   const sc_time *clk_Periods
+     * \brief 
+     * \details 
+     * \private
+     */
+    const sc_time m_ClkPeriod(10, SC_NS);
+
+
+    /*!
+     * \property sc_clock *clk_Router
+     * \brief Pointer to sc_clock
+     * \details  
+     * \private
+     */
+    sc_clock m_Clk("CLK", m_ClkPeriod);
+
+
   ///initiate the simulation
   Simulation test("Test");
-
-  cout << "Simulation starts for " << SIMULATION_DURATION << " ns" << endl; 
+  test.port_Clk(m_Clk);
+  cout << "Simulation starts for " << SIMULATION_DURATION << " s" << endl; 
   ///run the simulation	
   sc_start(SIMULATION_DURATION, SC_SEC);
 

@@ -113,3 +113,13 @@ bool BGPSession::isSessionValid(void)
 {
     return m_SessionValidity;
 }
+
+
+
+
+bool BGPSession::isThisSession(sc_int<32> p_BGPIdentifier)
+{
+
+    return true;
+
+}

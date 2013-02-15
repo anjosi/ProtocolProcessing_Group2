@@ -25,6 +25,17 @@
 #include "systemc"
 #include "Router.hpp"
 #include "BGPSessionParameters.hpp"
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <netinet/in.h>
+
+#define MAXPENDING 5    /* Max connection requests */
+#define BUFFSIZE 32
+
+
 
 using namespace std;
 using namespace sc_core;
@@ -52,6 +63,14 @@ class Simulation: public sc_module
 
 public:
 
+
+  /*! \brief Clock signal
+   * \details 
+   * \public
+   */
+  sc_in_clk port_Clk;
+
+
     /*!
      * \brief Constructor
      * \details Builds the simulation
@@ -61,18 +80,19 @@ public:
     Simulation(sc_module_name p_Name);
 
     ~Simulation();
-    /*
-      void before_end_of_elaboration()
-      {
-      cout << "Pata" << endl;
-      }
 
-      void end_of_elaboration()
-      {
-      cout << "Pata Pata" << endl;
-      }
-    */
+void socketMain(void);
+
+
+  /*! \brief Indicate the systemC producer that this module has a process.
+   * \sa http://www.iro.umontreal.ca/~lablasso/docs/SystemC2.0.1/html/classproducer.html
+   * \public
+   */
+SC_HAS_PROCESS(Simulation);
+
+
 private:
+
 
     Packet m_Packet;
 
@@ -118,5 +138,13 @@ private:
      * \private
      */
     const char *appendName(string p_Name, int p);
+
+
+
+
+
+    void Die(char *mess);
+    void HandleClient(int sock);
+
 };
 

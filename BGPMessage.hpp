@@ -22,7 +22,7 @@ using std::string;
 
 using sc_core::sc_trace_file;
 using sc_core::sc_trace;
-
+using sc_dt::sc_int;
 
 #ifndef BGPMESSAGE_H
 #define BGPMESSAGE_H
@@ -39,6 +39,8 @@ public:
     BGPMessage(BGPMessage& p_Msg);
     
     
+    sc_int<32> m_BGPIdentifier;
+
 
     /*! \relates sc_signal
      * \brief Overload stream operator

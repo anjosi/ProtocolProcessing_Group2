@@ -27,3 +27,4 @@ BGPMessage& BGPMessage::operator = (const BGPMessage& p_Msg)
 bool BGPMessage::operator == (const BGPMessage& p_Msg) const {
     return true;
 }
+

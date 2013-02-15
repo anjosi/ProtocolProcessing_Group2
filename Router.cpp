@@ -9,6 +9,8 @@
 
 #include "Router.hpp"
 
+
+
 Router::Router(sc_module_name p_ModuleName, int p_InterfaceCount, BGPSessionParameters p_BGPSessionParam):sc_module(p_ModuleName), m_InterfaceCount(p_InterfaceCount), m_Bgp("BGP", p_InterfaceCount, p_BGPSessionParam), m_IP("IP", p_InterfaceCount)
 {
 
@@ -110,3 +112,5 @@ const char* Router::appendName(string p_Name, int p)
   p_Name += ss.str();
   return p_Name.c_str();
 }
+
+     
