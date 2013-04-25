@@ -42,6 +42,7 @@ ControlPlane::~ControlPlane()
     for (int i = 0; i < m_SessionCount; ++i)
         delete m_BGPSessions[i];
     delete m_BGPSessions;
+   delete l_Temp;
 }
 
 
@@ -131,6 +132,11 @@ void ControlPlane::controlPlaneMain(void)
 
 
     }
-    delete l_Temp;
+
+
+
+
+
+ 
 }
 
