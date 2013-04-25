@@ -8,21 +8,21 @@
 
 
 #include "DataPlane.hpp"
-#include "StringTools.hpp"
 #include "ReportGlobals.hpp"
 
 
-DataPlane::DataPlane(sc_module_name p_ModuleName, int p_InterfaceCount):sc_module(p_ModuleName), m_InterfaceCount(p_InterfaceCount)
-{
-    // Export the BGP message buffer interface
-    //    export_ToDataPlane(m_BGPForwardingBuffer);
 
+DataPlane::DataPlane(sc_module_name p_ModuleName, ControlPlaneConfig * const p_Config):sc_module(p_ModuleName), m_Config(p_Config)
+{
+    m_Rpt.setBaseName(name());
+	m_InterfaceCount = m_Config->getNumberOfInterfaces();
     SC_THREAD(main);
     sensitive << port_Clk.pos();
 }
 
 DataPlane::~DataPlane()
 {
+
 }
 
 
@@ -30,58 +30,65 @@ DataPlane::~DataPlane()
 void DataPlane::main(void)
 {
 
-    StringTools *l_Report = new StringTools(name());
+    // SC_REPORT_INFO(g_ReportID, m_Rpt.newReportString("starting "));
+    // m_Packet.setProtocolType(TYPE_IP);
+    // m_Packet.setIPPayload("1");
+    // port_ToInterface[0]->write(m_Packet);
 
-    SC_REPORT_INFO(g_ReportID, l_Report->newReportString("starting "));
-
-    //EXAMPLE OF HOW TO USE STRINGTOOLS FOR REPORTING.
-
-    // SC_REPORT_INFO(g_MessageId, l_Report->appendReportString("--- "));
-    //l_Report->setStampTime(false);
-    // SC_REPORT_INFO(g_MessageId, l_Report->getReportString());
-    //l_Report->resetReportString();
-    // SC_REPORT_INFO(g_MessageId, l_Report->getReportString());
-
-  int i = 0;
-
-  m_Packet.setProtocolType(0);
-  m_Packet.setIPPayload("1");
-
-  port_ToInterface[0]->write(m_Packet);
     while(true)
-    {
-      wait();
+        {
+            wait();
+ 
+            //check all the interfaces
+            for (int i = 0; i < m_InterfaceCount; i++)
+                {
 
-      if(port_FromInterface[i]->num_available() > 0)
-          {
-              port_FromInterface[i]->read(m_Packet);
-              //cout << name() << " received: " << m_Packet << ". At time: " << sc_time_stamp() << endl;
-              //      cout << name() << " resolved route in interface " << port_ToRoutingTable->resolveRoute(9) << endl;
+                    if(port_FromInterface[i]->num_available() > 0)
+                        {
 
+                            port_FromInterface[i]->read(m_Packet);
 
-              m_Packet.setProtocolType(m_Packet.getProtocolType()+1);
-              m_Packet.setIPPayload(m_Packet.getIPPayload() << 1);
-              //              cout << name() << " forwarding out from interface 0" << endl;
-              port_ToInterface[0]->write(m_Packet);
-              //              cout << name() << " forwarding out from interface 1" << endl;
-              port_ToInterface[1]->write(m_Packet);
+                            if(m_Packet.getProtocolType() == TYPE_IP)
+                                {
 
-          }
-      i++;
-      if(i == m_InterfaceCount-1)
-	i = 0;
+                                    // m_Packet.setIPPayload(m_Packet.getIPPayload() << 1);
 
-      //Example how to resolve a route
-      //port_ToRoutingTable->resolveRoute(1);
+                                    // port_ToInterface[0]->write(m_Packet);
 
-    }
-    delete l_Report;
+                                    // port_ToInterface[1]->write(m_Packet);
+                                }
+                            else if (m_Packet.getProtocolType() == TYPE_BGP)
+                                {
+                                    m_BGPMsg = m_Packet.getBGPPayload();
+                                    m_BGPMsg.m_OutboundInterface = i;
+                                    port_ToControlPlane->write(m_BGPMsg);                            
+                                }
+                        }
+                }     
+
+            if (m_BGPForwardingBuffer.num_available() > 0)
+                {
+                    
+                    // SC_REPORT_INFO(g_ReportID, m_Rpt.newReportString("Sending BGP message"));
+                    m_BGPForwardingBuffer.read(m_BGPMsg);
+                    m_Packet.setBGPPayload(m_BGPMsg);
+                    m_Packet.setProtocolType(TYPE_BGP);
+                    port_ToInterface[m_BGPMsg.m_OutboundInterface]->write(m_Packet);
+                }
+
+            //Example how to resolve a route
+            //port_ToRoutingTable->resolveRoute(1);
+
+        }
 }
 
 bool DataPlane::write(BGPMessage p_BGPMsg)
 {
+    //enter to the critical region
     m_BGPForwardingBufferMutex.lock();
+    //write the message to the buffer
     m_BGPForwardingBuffer.write(p_BGPMsg);
+    //exit from the critical region
     m_BGPForwardingBufferMutex.unlock();
     return true;
 }

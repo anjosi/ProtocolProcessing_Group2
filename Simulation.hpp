@@ -22,33 +22,18 @@
 
 
 
+
 #include "systemc"
 #include "Router.hpp"
-#include "BGPSessionParameters.hpp"
 #include "StringTools.hpp"
 #include "ServerSocket.h"
 #include "SocketException.h"
-#include <string>
+
 
 using namespace std;
 using namespace sc_core;
 using namespace sc_dt;
 
-
-
-//Simulation parameters
-
-
-/*! \def ROUTER_COUNT
- *  Defines the number of rotuers in the simulation
- */
-#define ROUTER_COUNT 3
-
-
-/*! \def IF_COUNT
- *  Defines the number of interfaces in each router
- */
-#define INTERFACE_COUNT 2
 
 
 class Simulation: public sc_module
@@ -64,28 +49,15 @@ public:
      * @param[in] p_Name The name of the module
      * \public
      */
-    Simulation(sc_module_name p_Name, ServerSocket& p_Socket);
+    Simulation(sc_module_name p_Name, ServerSocket& p_Socket, SimulationConfig * const p_SimuConfiguration);
 
     ~Simulation();
 
-
     void simulationMain(void);
-    /*
-      void before_end_of_elaboration()
-      {
-      cout << "Pata" << endl;
-      }
 
-      void end_of_elaboration()
-      {
-      cout << "Pata Pata" << endl;
-      }
-    */
     SC_HAS_PROCESS(Simulation);
 
 private:
-
-
 
     /*!
      * \property ServerSocket m_GUISocket
@@ -95,6 +67,13 @@ private:
      */
     ServerSocket m_GUISocket;
 
+    /*!
+     * \property string word
+     * \brief holds the commands received from the UI
+     * \details 
+     * \private
+     */
+    string m_Word;
 
     /*!
      * \property Packet m_Packet
@@ -104,7 +83,6 @@ private:
      */
     Packet m_Packet;
 
-
     /*!
      * \property sc_trace_file *m_TraceFilePointer
      * \brief Pointer to the VCD trace file
@@ -112,8 +90,6 @@ private:
      * \private
      */
     sc_trace_file *m_TraceFilePointer;
-
-
 
     /*!
      * \property  StringTools m_Name
@@ -123,17 +99,66 @@ private:
      */
     StringTools m_Name;
 
-
     /*!
      * \property  Router **m_router
      * \brief Pointer to Router pointer
      * \details  Used in dynamic allocation of Router Modules
      * \private
      */
-
     Router **m_Router;
 
-    BGPSessionParameters m_BGPSessionParam;
+    /*!
+     * \property  SimulationConfig m_SimuConfiguration
+     * \brief Holds the configuration of the whole simulation
+     * \private
+     */
+    SimulationConfig *m_SimuConfiguration;
+
+    /*!
+     * \property  int m_FieldBuffer
+     * \brief Holds temporarly the values of command arguments
+     * \private
+     */
+    int m_FieldBuffer[3];
+
+    /*!
+     * \property  enum ServerStates{RECEIVE, PROCESS, SEND, TERMINATE} enum_State
+     * \brief Defines the socket server states
+     * \private
+     */
+    enum ServerStates{ACTIVE, PROCESS, SEND, TERMINATE} enum_State, prev_State;
+
+    /*!
+     * \fn void socketRoutine(void) 
+     * \brief Determines the type of the received command
+     * \private
+     */
+    void socketRoutine(void);
+
+    /*!
+     * \fn bool sendRoutine(void)
+     * \brief Writes the content of m_Word to the socket
+     * return true: word sent - false: word not sent
+     * \private
+     */
+    bool sendRoutine(void);
+
+    /*!
+     * \fn bool receiveRoutine(void)
+     * \brief Reads a word from the socket if available
+     * return true: word received - false: word not received
+     * \private
+     */
+    bool receiveRoutine(void);
+
+    /*!
+     * \fn bool fieldRoutine(int p_NumOfFields)
+     * \brief Reads the argument fields of a command
+     * param[in] int p_NumOfFields Defines how many fields there is to be received
+     * return true: word received - false: word not received
+     * \private
+     */
+    bool fieldRoutine(int p_NumOfFields);
 
 };
 

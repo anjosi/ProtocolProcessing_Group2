@@ -60,23 +60,32 @@ public:
 
     /*! \brief Holds the BGP message type value
      * \details
-     * \private
+     * \public
      */
     int m_Type;
 
     /*! \brief The originator's BGP identifier
      * \details
-     * \private
+     * \public
      */
-    sc_int<32> m_BGPIdentifier;
+    string m_BGPIdentifier;
 
     /*! \brief The originator's BGP identifier
      * \details
-     * \private
+     * \public
      */
     int m_OutboundInterface;
 
-    BGPMessage():m_Type(0){};
+    /*! \property int m_AS 
+     * \brief AS identifier
+     * \details 
+     * \public
+     */
+    int m_AS;
+    
+
+
+    BGPMessage():m_Type(0), m_OutboundInterface(0){};
 
     ~BGPMessage(){};
 

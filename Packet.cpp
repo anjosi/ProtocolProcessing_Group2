@@ -15,10 +15,7 @@
 
 Packet::Packet(void)
 {
-
-    m_ProtocolType = 0;
-    m_IPPayload = 0;
-
+    initPDU();
 }
 
 Packet::~Packet(void)
@@ -27,22 +24,17 @@ Packet::~Packet(void)
 
 Packet::Packet(const Packet& p_Packet)
 {
+    initPDU();
     *this = p_Packet;
 }
 
 
 Packet::Packet(BGPMessage& p_BGPPayload, int p_ProtocolType)
 {
+    initPDU();
     m_BGPPayload = p_BGPPayload;
     m_ProtocolType = p_ProtocolType;
 
-
-}
-
-Packet::Packet(sc_bv<MTU> p_IPPayload, int p_ProtocolType)
-{
-    m_ProtocolType = p_ProtocolType;
-    m_IPPayload = p_IPPayload;
 
 }
 
@@ -57,20 +49,6 @@ void Packet::setBGPPayload(BGPMessage& p_BGPPayload)
     m_BGPPayload = p_BGPPayload;
 }
 
-void Packet::setIPPayload(sc_bv<MTU> p_IPPayload)
-{
-    m_IPPayload = p_IPPayload;
-}
-
-
-
-
-sc_bv<MTU> Packet::getIPPayload(void)
-{
-
-    return m_IPPayload;
-}
-
 BGPMessage& Packet::getBGPPayload(void)
 {
 
@@ -82,17 +60,59 @@ int Packet::getProtocolType(void)
     return m_ProtocolType;
 }
 
+void Packet::setPDU(const unsigned char *p_PDU)
+{
+    for (int i = 0; i < MTU; i++)
+        {
+            m_PDU[i] = p_PDU[i];
+        }
+}
+
+/*! \sa Packet
+ */
+void Packet::getPDU(unsigned char *p_PDU)
+{
+    
+    for (int i = 0; i < MTU; i++)
+        {
+            p_PDU[i] = m_PDU[i];
+        }
+
+}
+
+
 
 bool Packet::operator == (const Packet& p_Packet) const {
-    return (p_Packet.m_IPPayload == m_IPPayload && p_Packet.m_BGPPayload == m_BGPPayload && p_Packet.m_ProtocolType == m_ProtocolType );
+
+    for (int i = 0; i < MTU; i++)
+        {
+            if(m_PDU[i] != p_Packet.m_PDU[i])
+                return false;
+        }
+    return (p_Packet.m_BGPPayload == m_BGPPayload && p_Packet.m_ProtocolType == m_ProtocolType );
 }
 
 Packet& Packet::operator = (const Packet& p_Packet) {
     m_BGPPayload = p_Packet.m_BGPPayload;
-    m_IPPayload = p_Packet.m_IPPayload;
     m_ProtocolType = p_Packet.m_ProtocolType;
+    initPDU();
+    setPDU(p_Packet.m_PDU);
+
+
     return *this;
 }
+
+
+/*! \sa Packet
+ */
+void Packet::initPDU(void)
+{
+for (int i = 0; i < MTU; i++)
+    {
+        m_PDU[i] = 0;
+    }    
+}
+
 
 
 

@@ -27,7 +27,9 @@ using sc_dt::sc_bv;
 #ifndef PACKET_H
 #define PACKET_H
 
-#define MTU 192
+#define MTU 576
+#define TYPE_IP 0
+#define TYPE_BGP 1
 
 class Packet
 {
@@ -67,15 +69,6 @@ public:
      */
     Packet(BGPMessage& p_BGPPayload, int p_ProtocolType);
 
-    /*!
-     * \brief Constructor with member data.
-     * \details Initiates the packet data and all the id fields to given values.
-     * @param[in] sc_bv<MTU> p_IPPayload The IP packet as bit string
-     * @param[in] int p_ProtocolType The upper layer protocol type carried in the payload
-     * \public
-     */
-    Packet(sc_bv<MTU> p_IPPayload, int p_ProtocolType);
-
 
     /*!
      * \brief Set BGP message as payload
@@ -87,14 +80,6 @@ public:
 
 
     /*!
-     * \brief Set IP packet as payload
-     * @param[in] sc_bv<MTU> p_IPPayload IP packet as bit string
-     * \public
-     */
-    void setIPPayload(sc_bv<MTU> p_IPPayload);
-
-
-    /*!
      * \brief Set the upper layer protocol type
      * @param[in] int p_ProtocolType Value to indicate the upper layer
      * protocol type
@@ -102,12 +87,22 @@ public:
      */
     bool setProtocolType(int p_ProtocolType);
 
-    /*!
-     * \brief Get IP packet
-     * \return \b <sc_bv<int>> The IP packet as bit string
+    /*! \fn void setPDU(const unsigned char *p_PDU); 
+     * \brief Sets the PDU
+     * \details 
+     * @param [in] const unsigned char *p_PDU  
      * \public
      */
-    sc_bv<MTU> getIPPayload(void);
+    void setPDU(const unsigned char *p_PDU);
+    
+
+    /*! \fn void getPDU(unsigned char *p_PDU); 
+     * \brief Copy PDU to the array pointed by p_PDU
+     * \details 
+     * \return unsigned char *p_PDU
+     * \public
+     */
+    void getPDU(unsigned char *p_PDU);
 
 
     /*!
@@ -154,7 +149,15 @@ public:
     inline friend ostream& operator << (ostream& os,  Packet const & p_Packet )
     {   
 
-        os  << "BGP_Payload: " << p_Packet.m_BGPPayload << ", IP_Payload: " << p_Packet.m_IPPayload << ", Protocol type: " << p_Packet.m_ProtocolType;
+        os  << "**********************" << endl << "BGP_Payload: " << p_Packet.m_BGPPayload << ", Protocol type: " << p_Packet.m_ProtocolType<< endl << "**********************" << endl << "PDU" << endl <<"----------------------";
+
+        for (int i = 0; i < MTU; i++)
+            {
+                if(i%4 == 0)
+                    os << endl;
+                os << p_Packet.m_PDU[i] << ";";
+            }
+
         return os;
     }
 
@@ -170,8 +173,8 @@ public:
     {
   
         sc_trace(p_TraceFilePointer, p_Packet.m_ProtocolType, p_TraceObjectName + ".Protocol_Type");
-        sc_trace(p_TraceFilePointer, p_Packet.m_IPPayload, p_TraceObjectName + ".IP_Payload");
         sc_trace(p_TraceFilePointer, p_Packet.m_BGPPayload, p_TraceObjectName + ".BGP_Payload");
+
     }
   
 
@@ -184,18 +187,26 @@ private:
      * \private
      */
     BGPMessage m_BGPPayload;
-
-    /*! \brief Holds the IP packet as bit string
-     * \details The MTU defines the length of the packet fragment
+    
+    /*! \property unsigned char m_PDU[MTU] 
+     * \brief The PDU that this packet carries 
+     * \details IP packet is stored in this one
      * \private
      */
-    sc_bv<MTU> m_IPPayload;
+    unsigned char m_PDU[MTU];
 
     /*! \brief Holds the protocol type of the packet 
      * \details 
      * \private
      */
     int m_ProtocolType;
+
+    /*! \fn void initPDU(void) 
+     * \brief Sets all the fields in m_PDU to zero
+     * \details 
+     * \private
+     */
+    void initPDU(void);
 
 };
 

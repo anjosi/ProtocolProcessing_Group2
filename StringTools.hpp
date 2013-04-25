@@ -15,6 +15,7 @@
 #include "systemc"
 
 using namespace std;
+using namespace sc_dt;
 
 #ifndef _STRINGTOOLS_H_
 #define _STRINGTOOLS_H_
@@ -67,6 +68,42 @@ public:
     const char* appendReportString(int p_ReportInt);
 
     void resetReportString(void);
+
+    string iToS(int p_Value);
+
+    string uToS(unsigned p_Value);
+
+    sc_uint<32> convertIPToBinary(string p_Prefix);
+
+    sc_uint<32> convertMaskToBinary(string p_Prefix);
+
+    string convertIPToString(sc_uint<32> p_IP, sc_uint<32> p_Mask);
+
+    string convertIPToString(sc_uint<32> p_IP);
+
+    string convertMaskToString(sc_uint<32> p_Mask);
+
+    /*! \fn bool ipToUChar(string p_IPAddress, unsigned char *p_IPBinAddress); 
+     * \brief Converts string type IPAddress to binary form in four element unsigned char array
+     * \details 
+     * @param [in] string p_IPAddress 
+     * @param [out] unsigned char *p_IPBinAddress 
+     * \return bool: true - conversion success | false - conversion failed
+     * \public
+     */
+    bool ipToUChar(string p_IPAddress, unsigned char *p_IPBinAddress);
+
+    /*! \fn string ipToString(unsigned char *ptr_IPBinAddress); 
+     * \brief Converts IP address from four byte binary form to string form
+     * \details 
+     * @param [in] unsigned p_IPBinAddress The ip address in binary form
+     * \return string: The IP address in string 
+     * \public
+     */
+    string ipToString(unsigned char *ptr_IPBinAddress);
+    
+    
+
 
 private:
 

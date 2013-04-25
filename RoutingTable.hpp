@@ -17,11 +17,13 @@
 #include "systemc"
 #include "RoutingTable_If.hpp"
 #include "BGPMessage.hpp"
+#include "Configuration.hpp"
+#include "BGPSession_If.hpp"
+#include "Output_If.hpp"
 
 using namespace std;
 using namespace sc_core;
 using namespace sc_dt;
-
 
 
 #ifndef _ROUTINGTABLE_H_
@@ -29,12 +31,12 @@ using namespace sc_dt;
 
 struct Route
 {
+    int id;
     string prefix;
     int mask;
     string ASes;
     int OutputPort;
     Route * next;
-    Route * prev;
 };
 
 class RoutingTable: public sc_module, public RoutingTable_If
@@ -56,6 +58,21 @@ public:
      */
     sc_export<sc_fifo_out_if<BGPMessage> > export_ToRoutingTable;
 
+    /*! \brief Control port
+     * \details Routing table can check through this port whether the
+     * network interfaces are up or not.
+     * \public
+     */
+    sc_port<BGPSession_If, 0, SC_ZERO_OR_MORE_BOUND> port_Session;
+
+    /*! \brief Output port for BGP messages
+     * \details The RoutingTable writes all the BGP messages to be send
+     * to its neighbors into
+     * this port. The port should be bind to the Data Plane's.
+     * receiving FIFO
+     * \public
+     */
+    sc_port<Output_If> port_Output;
 
 
     //    void before_end_of_elaboration()
@@ -68,7 +85,7 @@ public:
      * \details
      * \public
      */
-    RoutingTable(sc_module_name p_ModuleName);
+    RoutingTable(sc_module_name p_ModuleName, ControlPlaneConfig * const p_RTConfig);
 
 
 
@@ -93,7 +110,7 @@ public:
      * \details
      * \public
      */
-    virtual int resolveRoute(string p_IPAddress);
+    virtual int resolveRoute(string  p_IPAddress);
 
 
 
@@ -102,6 +119,31 @@ public:
      * \public
      */
     SC_HAS_PROCESS(RoutingTable);
+
+    void addRouteToRawTable(string p_msg, int p_outputPort);
+    //void setMED(int p_routeId,)
+
+    // Give preferred AS and some preference value to it.
+    void setLocalPreference(int p_AS, int p_preferenceValue);
+
+    // Remove some as from the list of preferred ASes
+    void removeLocalPref(int p_AS);
+
+    // Delete route from the RawRoutingTable. Parameters are router IDs.
+    void deleteRoute(int p_router1, int p_router2);
+
+
+
+
+    // Return MainRoutingTable
+    string getRoutingTable();
+
+    // Return RawRoutingTable
+    string getRawRoutingTable();
+
+    // Remove all the routes from raw routing table and update maintable as well after that
+    void clearRoutingTables();
+
 
 
 
@@ -119,25 +161,65 @@ private:
      */
     sc_fifo<BGPMessage> m_ReceivingBuffer;
 
-    void addNewRoute(string p_msg, int OutputPort);
+    // Construct new route from p_msg.
     void createRoute(string p_msg,int p_outputPort, Route * p_route);
+
+    // Handle NOTIFICATION message type
     void handleNotification (BGPMessage NOTIFICATION_message);
-    Route * findRoute(string p_IPAddress);
+
+    // Return Route which prefix is p_prefix
+    Route * findRoute(string p_prefix);
+
+    // Return how many bits are the same from p_route and p_IP. Used for deciding which route to use
     int matchLength(Route * p_route, string p_IP);
+
+    // Update MainRoutingTable. Iterate through the RawRoutingTable and pick the preferred routes from there to MainRoutingTable
     void updateRoutingTable();
+
+    // Take two routes as a parameter and add the more preferred one to MainRoutingTable
     void addPreferredRoute(Route p_route1, Route p_route2);
+
+    // Add p_route to MainRoutingTable
     void setRoute(Route p_route);
-    void removeFromRawTable(Route p_route);
+
+    // Remove route from RawRoutingTable
+    void removeFromRawTable(int p_routeId);
+
+    // Remove route from MainRoutingTable
+    void removeFromRoutingTable(int p_routeId);
+
+    // Return true if p_route1 and p_route2 has the same prefix&mask combination
+    bool sameRoutes(Route p_route1, Route p_route2);
+
+    // Return the ASPathLength of p_route
+    int ASpathLength(Route p_route);
+
+    // Convert p_route to string. Syntax: ID,Prefix,Mask,Routers,ASes (e.g. 5,100100200050,8,2-4-6-7,100-4212-231-22)
+    string routeToString(Route p_route);
+
+    // Convert the hole RoutingTable to string. Start from p_route
+    string routingTableToString(Route * p_route);
+
+    // Delete routes from RawRoutingTable with given output port
+    void deleteRoutes(int p_outputPort);
+
+    // Send withdraw-message to all peers
+    void sendWithdraw(Route p_route);
+
+    // Handle received withdraw message
+    void handleWithdraw(string p_message);
+
+    // Return the length of the table
+    int tableLength();
 
 
+    // Just for testing?
     void printRoutingTable();
     void printRawRoutingTable();
     void printOneRoute(Route p_route);
-
-    int tableLength();
     void fillRoutingTable();
 
-
+    ControlPlaneConfig *m_RTConfig;
 
     /*! \brief BGP message
      * \details
@@ -145,12 +227,19 @@ private:
      */
     BGPMessage m_BGPMsg;
 
+    // Pointer to the heads and ends of the tables
     Route * m_headOfRawTable;
     Route * m_endOfRawTable;
-    Route * m_iterator;  // TODO change name;
+    Route * m_iterator;
 
     Route * m_headOfRoutingTable;
     Route * m_endOfRoutingTable;
+
+
+
+    // Preferred ASes and their preference values are stored in here
+    // Syntax: [AS][VALUE][AS][VALUE][AS][VALUE]... so even number contain the as and odd numbers their values.
+    vector<int> preferredASes;
 
 
     // //TODO Find out what parameters we need for this function.
